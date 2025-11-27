@@ -16,7 +16,7 @@ pub const USDC_MINT: Pubkey =
 pub const FEE_USDC: u64 = 150_000;
 
 /// Config account - stores admin and program state
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ConfigAccount {
     pub discriminator: [u8; 8],
     pub admin: Pubkey,
@@ -52,7 +52,7 @@ impl ConfigAccount {
 }
 
 /// Lock account - stores information about a single token lock
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct LockAccount {
     pub discriminator: [u8; 8],
     pub owner: Pubkey,
@@ -104,5 +104,152 @@ impl LockAccount {
         dst[88..96].copy_from_slice(&self.created_at.to_le_bytes());
         dst[96..104].copy_from_slice(&self.lock_id.to_le_bytes());
         dst[104] = self.bump;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use solana_program::pubkey::Pubkey;
+
+    #[test]
+    fn test_config_account_pack_unpack_roundtrip() {
+        let config = ConfigAccount {
+            discriminator: ConfigAccount::DISCRIMINATOR,
+            admin: Pubkey::new_unique(),
+            bump: 255,
+        };
+
+        let mut buffer = vec![0u8; ConfigAccount::SIZE];
+        config.pack(&mut buffer);
+
+        let unpacked = ConfigAccount::unpack(&buffer).unwrap();
+        assert_eq!(config, unpacked);
+    }
+
+    #[test]
+    fn test_config_account_unpack_insufficient_size() {
+        let data = vec![0u8; ConfigAccount::SIZE - 1];
+        let result = ConfigAccount::unpack(&data);
+        assert_eq!(
+            result.unwrap_err(),
+            ProgramError::Custom(LocksmithError::UninitializedAccount as u32)
+        );
+    }
+
+    #[test]
+    fn test_config_account_unpack_wrong_discriminator() {
+        let mut data = vec![0u8; ConfigAccount::SIZE];
+        data[0..8].copy_from_slice(b"WRONGDIS");
+
+        let result = ConfigAccount::unpack(&data);
+        assert_eq!(
+            result.unwrap_err(),
+            ProgramError::Custom(LocksmithError::UninitializedAccount as u32)
+        );
+    }
+
+    #[test]
+    fn test_lock_account_pack_unpack_roundtrip() {
+        let lock = LockAccount {
+            discriminator: LockAccount::DISCRIMINATOR,
+            owner: Pubkey::new_unique(),
+            mint: Pubkey::new_unique(),
+            amount: 1_000_000_000,
+            unlock_timestamp: 1700000000,
+            created_at: 1699000000,
+            lock_id: 42,
+            bump: 254,
+        };
+
+        let mut buffer = vec![0u8; LockAccount::SIZE];
+        lock.pack(&mut buffer);
+
+        let unpacked = LockAccount::unpack(&buffer).unwrap();
+        assert_eq!(lock, unpacked);
+    }
+
+    #[test]
+    fn test_lock_account_unpack_insufficient_size() {
+        let data = vec![0u8; LockAccount::SIZE - 1];
+        let result = LockAccount::unpack(&data);
+        assert_eq!(
+            result.unwrap_err(),
+            ProgramError::Custom(LocksmithError::UninitializedAccount as u32)
+        );
+    }
+
+    #[test]
+    fn test_lock_account_unpack_wrong_discriminator() {
+        let mut data = vec![0u8; LockAccount::SIZE];
+        data[0..8].copy_from_slice(b"WRONGDIS");
+
+        let result = LockAccount::unpack(&data);
+        assert_eq!(
+            result.unwrap_err(),
+            ProgramError::Custom(LocksmithError::UninitializedAccount as u32)
+        );
+    }
+
+    #[test]
+    fn test_lock_account_rejects_config_discriminator() {
+        let mut data = vec![0u8; LockAccount::SIZE];
+        data[0..8].copy_from_slice(&ConfigAccount::DISCRIMINATOR);
+
+        assert!(LockAccount::unpack(&data).is_err());
+    }
+
+    #[test]
+    fn test_discriminators_are_unique() {
+        assert_ne!(ConfigAccount::DISCRIMINATOR, LockAccount::DISCRIMINATOR);
+    }
+
+    #[test]
+    fn test_config_account_byte_layout() {
+        let admin_bytes: [u8; 32] = [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25, 26, 27, 28, 29, 30, 31, 32,
+        ];
+        let config = ConfigAccount {
+            discriminator: ConfigAccount::DISCRIMINATOR,
+            admin: Pubkey::from(admin_bytes),
+            bump: 200,
+        };
+
+        let mut buffer = vec![0u8; ConfigAccount::SIZE];
+        config.pack(&mut buffer);
+
+        assert_eq!(&buffer[0..8], b"CONFIG\0\0");
+        assert_eq!(&buffer[8..40], &admin_bytes);
+        assert_eq!(buffer[40], 200);
+    }
+
+    #[test]
+    fn test_lock_account_byte_layout() {
+        let owner_bytes: [u8; 32] = [1u8; 32];
+        let mint_bytes: [u8; 32] = [2u8; 32];
+
+        let lock = LockAccount {
+            discriminator: LockAccount::DISCRIMINATOR,
+            owner: Pubkey::from(owner_bytes),
+            mint: Pubkey::from(mint_bytes),
+            amount: 0x0102030405060708,
+            unlock_timestamp: 0x090A0B0C0D0E0F10_u64 as i64,
+            created_at: 0x1112131415161718_u64 as i64,
+            lock_id: 0x191A1B1C1D1E1F20,
+            bump: 250,
+        };
+
+        let mut buffer = vec![0u8; LockAccount::SIZE];
+        lock.pack(&mut buffer);
+
+        assert_eq!(&buffer[0..8], b"LOCK\0\0\0\0");
+        assert_eq!(&buffer[8..40], &owner_bytes);
+        assert_eq!(&buffer[40..72], &mint_bytes);
+        assert_eq!(u64::from_le_bytes(buffer[72..80].try_into().unwrap()), 0x0102030405060708);
+        assert_eq!(i64::from_le_bytes(buffer[80..88].try_into().unwrap()), 0x090A0B0C0D0E0F10_u64 as i64);
+        assert_eq!(i64::from_le_bytes(buffer[88..96].try_into().unwrap()), 0x1112131415161718_u64 as i64);
+        assert_eq!(u64::from_le_bytes(buffer[96..104].try_into().unwrap()), 0x191A1B1C1D1E1F20);
+        assert_eq!(buffer[104], 250);
     }
 }

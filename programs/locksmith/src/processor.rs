@@ -8,9 +8,9 @@ use solana_program::{
     program_pack::Pack,
     pubkey::Pubkey,
     rent::Rent,
-    system_instruction,
     sysvar::Sysvar,
 };
+use solana_system_interface::instruction as system_instruction;
 use spl_token::state::Account as TokenAccount;
 
 use crate::error::LocksmithError;
@@ -47,11 +47,16 @@ fn process_initialize_config(program_id: &Pubkey, accounts: &[AccountInfo]) -> P
     let config_info = next_account_info(account_info_iter)?;
     let usdc_mint_info = next_account_info(account_info_iter)?;
     let fee_vault_info = next_account_info(account_info_iter)?;
-    let _token_program_info = next_account_info(account_info_iter)?;
+    let token_program_info = next_account_info(account_info_iter)?;
     let system_program_info = next_account_info(account_info_iter)?;
 
     if !admin_info.is_signer {
         return Err(ProgramError::MissingRequiredSignature);
+    }
+
+    // Validate token program is the official SPL Token program
+    if *token_program_info.key != spl_token::id() {
+        return Err(ProgramError::IncorrectProgramId);
     }
 
     if *usdc_mint_info.key != USDC_MINT {
@@ -188,6 +193,11 @@ fn process_withdraw_fees(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progr
         return Err(LocksmithError::Unauthorized.into());
     }
 
+    // Validate token program is the official SPL Token program
+    if *token_program_info.key != spl_token::id() {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
     let fee_vault = TokenAccount::unpack(&fee_vault_info.data.borrow())?;
     let amount = fee_vault.amount;
 
@@ -231,7 +241,6 @@ fn process_initialize_lock(
     let mint_info = next_account_info(account_info_iter)?;
     let lock_account_info = next_account_info(account_info_iter)?;
     let lock_token_info = next_account_info(account_info_iter)?;
-    let _config_info = next_account_info(account_info_iter)?;
     let fee_vault_info = next_account_info(account_info_iter)?;
     let token_program_info = next_account_info(account_info_iter)?;
     let system_program_info = next_account_info(account_info_iter)?;
@@ -242,6 +251,17 @@ fn process_initialize_lock(
 
     if amount == 0 {
         return Err(LocksmithError::InvalidAmount.into());
+    }
+
+    // Validate token program is the official SPL Token program
+    if *token_program_info.key != spl_token::id() {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // Validate fee vault PDA
+    let (fee_vault_pda, _) = Pubkey::find_program_address(&[FEE_VAULT_SEED], program_id);
+    if *fee_vault_info.key != fee_vault_pda {
+        return Err(LocksmithError::InvalidPDA.into());
     }
 
     let clock = Clock::get()?;
@@ -406,6 +426,11 @@ fn process_unlock(program_id: &Pubkey, accounts: &[AccountInfo], lock_id: u64) -
         return Err(ProgramError::MissingRequiredSignature);
     }
 
+    // Validate token program is the official SPL Token program
+    if *token_program_info.key != spl_token::id() {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
     let lock = LockAccount::unpack(&lock_account_info.data.borrow())?;
 
     if lock.owner != *owner_info.key {
@@ -440,6 +465,15 @@ fn process_unlock(program_id: &Pubkey, accounts: &[AccountInfo], lock_id: u64) -
     let lock_token = TokenAccount::unpack(&lock_token_info.data.borrow())?;
     if lock_token.amount != lock.amount {
         return Err(LocksmithError::InconsistentState.into());
+    }
+
+    // Validate destination token account belongs to the owner and has correct mint
+    let owner_token = TokenAccount::unpack(&owner_token_info.data.borrow())?;
+    if owner_token.owner != *owner_info.key {
+        return Err(LocksmithError::Unauthorized.into());
+    }
+    if owner_token.mint != lock.mint {
+        return Err(LocksmithError::InvalidMint.into());
     }
 
     let amount = lock.amount;
@@ -501,4 +535,143 @@ fn process_unlock(program_id: &Pubkey, accounts: &[AccountInfo], lock_id: u64) -
 
     msg!("Unlocked {} tokens", amount);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use solana_program::program_error::ProgramError;
+
+    #[test]
+    fn test_process_instruction_empty_data() {
+        let program_id = Pubkey::new_unique();
+        let accounts: Vec<AccountInfo> = vec![];
+        let instruction_data: [u8; 0] = [];
+
+        let result = process_instruction(&program_id, &accounts, &instruction_data);
+        assert_eq!(
+            result.unwrap_err(),
+            ProgramError::Custom(LocksmithError::InvalidInstruction as u32)
+        );
+    }
+
+    #[test]
+    fn test_process_instruction_invalid_tag() {
+        let program_id = Pubkey::new_unique();
+        let accounts: Vec<AccountInfo> = vec![];
+        let instruction_data = [255u8];
+
+        let result = process_instruction(&program_id, &accounts, &instruction_data);
+        assert_eq!(
+            result.unwrap_err(),
+            ProgramError::Custom(LocksmithError::InvalidInstruction as u32)
+        );
+    }
+
+    #[test]
+    fn test_lock_pda_isolation_by_lock_id() {
+        let program_id = crate::id();
+        let owner = Pubkey::new_unique();
+        let mint = Pubkey::new_unique();
+
+        let (pda_0, _) = Pubkey::find_program_address(
+            &[LOCK_SEED, owner.as_ref(), mint.as_ref(), &0u64.to_le_bytes()],
+            &program_id,
+        );
+        let (pda_1, _) = Pubkey::find_program_address(
+            &[LOCK_SEED, owner.as_ref(), mint.as_ref(), &1u64.to_le_bytes()],
+            &program_id,
+        );
+
+        assert_ne!(pda_0, pda_1);
+    }
+
+    #[test]
+    fn test_lock_pda_isolation_by_owner() {
+        let program_id = crate::id();
+        let owner_1 = Pubkey::new_unique();
+        let owner_2 = Pubkey::new_unique();
+        let mint = Pubkey::new_unique();
+        let lock_id = 1u64.to_le_bytes();
+
+        let (pda_1, _) = Pubkey::find_program_address(
+            &[LOCK_SEED, owner_1.as_ref(), mint.as_ref(), &lock_id],
+            &program_id,
+        );
+        let (pda_2, _) = Pubkey::find_program_address(
+            &[LOCK_SEED, owner_2.as_ref(), mint.as_ref(), &lock_id],
+            &program_id,
+        );
+
+        assert_ne!(pda_1, pda_2);
+    }
+
+    #[test]
+    fn test_lock_pda_isolation_by_mint() {
+        let program_id = crate::id();
+        let owner = Pubkey::new_unique();
+        let mint_1 = Pubkey::new_unique();
+        let mint_2 = Pubkey::new_unique();
+        let lock_id = 1u64.to_le_bytes();
+
+        let (pda_1, _) = Pubkey::find_program_address(
+            &[LOCK_SEED, owner.as_ref(), mint_1.as_ref(), &lock_id],
+            &program_id,
+        );
+        let (pda_2, _) = Pubkey::find_program_address(
+            &[LOCK_SEED, owner.as_ref(), mint_2.as_ref(), &lock_id],
+            &program_id,
+        );
+
+        assert_ne!(pda_1, pda_2);
+    }
+
+    #[test]
+    fn test_lock_token_pda_isolation() {
+        let program_id = crate::id();
+        let lock_1 = Pubkey::new_unique();
+        let lock_2 = Pubkey::new_unique();
+
+        let (token_pda_1, _) =
+            Pubkey::find_program_address(&[LOCK_TOKEN_SEED, lock_1.as_ref()], &program_id);
+        let (token_pda_2, _) =
+            Pubkey::find_program_address(&[LOCK_TOKEN_SEED, lock_2.as_ref()], &program_id);
+
+        assert_ne!(token_pda_1, token_pda_2);
+    }
+
+    #[test]
+    fn test_usdc_mint_matches_mainnet() {
+        assert_eq!(
+            USDC_MINT.to_string(),
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        );
+    }
+
+    #[test]
+    fn test_program_id_matches_declared() {
+        assert_eq!(
+            crate::id().to_string(),
+            "5fPbdosJd9P1gth7r9kmqc7gkgQzM2PfQHkXtQXcQyty"
+        );
+    }
+
+    #[test]
+    fn test_fee_usdc_is_015_usdc() {
+        // 0.15 USDC with 6 decimals = 150,000
+        assert_eq!(FEE_USDC, 150_000);
+    }
+
+    #[test]
+    fn test_config_account_size() {
+        // discriminator(8) + admin(32) + bump(1) = 41
+        assert_eq!(ConfigAccount::SIZE, 41);
+    }
+
+    #[test]
+    fn test_lock_account_size() {
+        // discriminator(8) + owner(32) + mint(32) + amount(8) + unlock_timestamp(8)
+        // + created_at(8) + lock_id(8) + bump(1) = 105
+        assert_eq!(LockAccount::SIZE, 105);
+    }
 }
