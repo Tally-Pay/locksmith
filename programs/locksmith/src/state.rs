@@ -15,6 +15,10 @@ pub const USDC_MINT: Pubkey =
 /// Fee amount: 0.15 USDC (USDC has 6 decimals)
 pub const FEE_USDC: u64 = 150_000;
 
+/// Maximum lock duration: 10 years in seconds
+/// This prevents accidental permanent locks while supporting all legitimate use cases
+pub const MAX_LOCK_DURATION_SECONDS: i64 = 10 * 365 * 24 * 60 * 60;
+
 /// Config account - stores admin and program state
 #[derive(Debug, PartialEq)]
 pub struct ConfigAccount {
@@ -251,5 +255,16 @@ mod tests {
         assert_eq!(i64::from_le_bytes(buffer[88..96].try_into().unwrap()), 0x1112131415161718_u64 as i64);
         assert_eq!(u64::from_le_bytes(buffer[96..104].try_into().unwrap()), 0x191A1B1C1D1E1F20);
         assert_eq!(buffer[104], 250);
+    }
+
+    #[test]
+    fn test_max_lock_duration_constant() {
+        // 10 years = 10 * 365 * 24 * 60 * 60 seconds
+        assert_eq!(MAX_LOCK_DURATION_SECONDS, 315_360_000);
+    }
+
+    #[test]
+    fn test_max_lock_duration_is_positive() {
+        assert!(MAX_LOCK_DURATION_SECONDS > 0);
     }
 }

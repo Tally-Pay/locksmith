@@ -17,7 +17,7 @@ use crate::error::LocksmithError;
 use crate::instruction::LocksmithInstruction;
 use crate::state::{
     ConfigAccount, LockAccount, CONFIG_SEED, FEE_USDC, FEE_VAULT_SEED, LOCK_SEED, LOCK_TOKEN_SEED,
-    USDC_MINT,
+    MAX_LOCK_DURATION_SECONDS, USDC_MINT,
 };
 
 pub fn process_instruction(
@@ -56,6 +56,11 @@ fn process_initialize_config(program_id: &Pubkey, accounts: &[AccountInfo]) -> P
 
     // Validate token program is the official SPL Token program
     if *token_program_info.key != spl_token::id() {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // Validate system program is the official System program
+    if !solana_system_interface::program::check_id(system_program_info.key) {
         return Err(ProgramError::IncorrectProgramId);
     }
 
@@ -258,6 +263,11 @@ fn process_initialize_lock(
         return Err(ProgramError::IncorrectProgramId);
     }
 
+    // Validate system program is the official System program
+    if !solana_system_interface::program::check_id(system_program_info.key) {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
     // Validate fee vault PDA
     let (fee_vault_pda, _) = Pubkey::find_program_address(&[FEE_VAULT_SEED], program_id);
     if *fee_vault_info.key != fee_vault_pda {
@@ -267,6 +277,15 @@ fn process_initialize_lock(
     let clock = Clock::get()?;
     if unlock_timestamp <= clock.unix_timestamp {
         return Err(LocksmithError::InvalidTimestamp.into());
+    }
+
+    // Validate lock duration does not exceed maximum (10 years)
+    let max_unlock_timestamp = clock
+        .unix_timestamp
+        .checked_add(MAX_LOCK_DURATION_SECONDS)
+        .ok_or(ProgramError::ArithmeticOverflow)?;
+    if unlock_timestamp > max_unlock_timestamp {
+        return Err(LocksmithError::LockDurationExceeded.into());
     }
 
     let lock_id_bytes = lock_id.to_le_bytes();
@@ -673,5 +692,41 @@ mod tests {
         // discriminator(8) + owner(32) + mint(32) + amount(8) + unlock_timestamp(8)
         // + created_at(8) + lock_id(8) + bump(1) = 105
         assert_eq!(LockAccount::SIZE, 105);
+    }
+
+    #[test]
+    fn test_max_lock_duration_is_10_years() {
+        // 10 years in seconds = 10 * 365 * 24 * 60 * 60
+        let expected_seconds: i64 = 10 * 365 * 24 * 60 * 60;
+        assert_eq!(MAX_LOCK_DURATION_SECONDS, expected_seconds);
+        // Verify it's approximately 315,360,000 seconds (10 years without leap years)
+        assert_eq!(MAX_LOCK_DURATION_SECONDS, 315_360_000);
+    }
+
+    #[test]
+    fn test_max_lock_duration_arithmetic_safety() {
+        // Ensure adding MAX_LOCK_DURATION_SECONDS to a reasonable timestamp doesn't overflow
+        let current_timestamp: i64 = 1_700_000_000; // ~2023
+        let result = current_timestamp.checked_add(MAX_LOCK_DURATION_SECONDS);
+        assert!(result.is_some());
+        // Result should be around 2033
+        assert!(result.unwrap() > current_timestamp);
+    }
+
+    #[test]
+    fn test_system_program_check_id_validates_correctly() {
+        // Test that the system program ID is recognized
+        let system_program_id = solana_system_interface::program::id();
+        assert!(solana_system_interface::program::check_id(&system_program_id));
+
+        // Test that a random key is not recognized as system program
+        let random_key = Pubkey::new_unique();
+        assert!(!solana_system_interface::program::check_id(&random_key));
+    }
+
+    #[test]
+    fn test_lock_duration_exceeded_error_code() {
+        // Ensure the new error code is correct
+        assert_eq!(LocksmithError::LockDurationExceeded as u32, 11);
     }
 }

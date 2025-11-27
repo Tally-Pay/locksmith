@@ -14,6 +14,7 @@ pub enum LocksmithError {
     AlreadyInitialized,
     InvalidPDA,
     InvalidMint,
+    LockDurationExceeded,
 }
 
 impl From<LocksmithError> for ProgramError {
@@ -40,6 +41,7 @@ mod tests {
         assert_eq!(LocksmithError::AlreadyInitialized as u32, 8);
         assert_eq!(LocksmithError::InvalidPDA as u32, 9);
         assert_eq!(LocksmithError::InvalidMint as u32, 10);
+        assert_eq!(LocksmithError::LockDurationExceeded as u32, 11);
     }
 
     /// Tests the From<LocksmithError> for ProgramError conversion
