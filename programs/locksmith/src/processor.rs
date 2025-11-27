@@ -432,6 +432,13 @@ fn process_initialize_lock(
     Ok(())
 }
 
+/// Unlocks tokens after the unlock timestamp has passed.
+///
+/// # Destination Token Account
+///
+/// The owner may specify any token account they own (with the correct mint) as the
+/// destination for unlocked tokens. This provides flexibility for the lock owner to
+/// receive tokens in whichever of their accounts they prefer.
 fn process_unlock(program_id: &Pubkey, accounts: &[AccountInfo], lock_id: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
 
