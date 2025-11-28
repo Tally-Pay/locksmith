@@ -2,6 +2,7 @@
 name = "locksmith"
 version = "0.1.0"
 description = "Native Solana token locker"
+authors = ["Tally Pay Contributors <roland@tallybl.ink>"]
 edition = "2021"
 
 [lib]
