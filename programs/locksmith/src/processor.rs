@@ -667,10 +667,10 @@ mod tests {
     }
 
     #[test]
-    fn test_usdc_mint_matches_mainnet() {
+    fn test_usdc_mint_matches_devnet() {
         assert_eq!(
             USDC_MINT.to_string(),
-            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
         );
     }
 
@@ -678,7 +678,7 @@ mod tests {
     fn test_program_id_matches_declared() {
         assert_eq!(
             crate::id().to_string(),
-            "5fPbdosJd9P1gth7r9kmqc7gkgQzM2PfQHkXtQXcQyty"
+            "A5vz72a5ipKUJZxmGUjGtS7uhWfzr6jhDgV2q73YhD8A"
         );
     }
 

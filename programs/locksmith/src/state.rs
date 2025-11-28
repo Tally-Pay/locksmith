@@ -8,9 +8,9 @@ pub const FEE_VAULT_SEED: &[u8] = b"fee_vault";
 pub const LOCK_SEED: &[u8] = b"lock";
 pub const LOCK_TOKEN_SEED: &[u8] = b"lock_token";
 
-/// USDC mint address on mainnet
+/// USDC mint address (devnet for testing)
 pub const USDC_MINT: Pubkey =
-    solana_program::pubkey!("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    solana_program::pubkey!("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
 /// Fee amount: 0.15 USDC (USDC has 6 decimals)
 pub const FEE_USDC: u64 = 150_000;
