@@ -276,9 +276,4 @@ mod tests {
         // 10 years = 10 * 365 * 24 * 60 * 60 seconds
         assert_eq!(MAX_LOCK_DURATION_SECONDS, 315_360_000);
     }
-
-    #[test]
-    fn test_max_lock_duration_is_positive() {
-        assert!(MAX_LOCK_DURATION_SECONDS > 0);
-    }
 }
