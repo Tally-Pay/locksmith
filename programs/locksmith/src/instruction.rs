@@ -1,19 +1,46 @@
+use shank::ShankInstruction;
 use solana_program::program_error::ProgramError;
 
 use crate::error::LocksmithError;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, ShankInstruction)]
 pub enum LocksmithInstruction {
     /// Initialize the program configuration and fee vault.
+    /// One-time setup that creates the config PDA and USDC fee vault.
+    #[account(0, signer, writable, name = "admin", desc = "Admin who will control the program")]
+    #[account(1, writable, name = "config", desc = "Config PDA to be created")]
+    #[account(2, name = "usdc_mint", desc = "USDC mint for fee validation")]
+    #[account(3, writable, name = "fee_vault", desc = "Fee vault PDA to be created")]
+    #[account(4, name = "token_program", desc = "SPL Token program")]
+    #[account(5, name = "system_program", desc = "System program")]
     InitializeConfig,
 
     /// Transfer admin role to a new wallet.
+    #[account(0, signer, name = "admin", desc = "Current admin")]
+    #[account(1, name = "new_admin", desc = "New admin pubkey")]
+    #[account(2, writable, name = "config", desc = "Config account")]
     TransferAdmin,
 
     /// Withdraw accumulated USDC fees to admin's wallet.
+    #[account(0, signer, name = "admin", desc = "Admin withdrawing fees")]
+    #[account(1, name = "config", desc = "Config account for admin verification")]
+    #[account(2, writable, name = "fee_vault", desc = "Fee vault holding USDC fees")]
+    #[account(3, writable, name = "admin_token_account", desc = "Admin's USDC token account")]
+    #[account(4, name = "token_program", desc = "SPL Token program")]
     WithdrawFees,
 
     /// Create a new token lock.
+    /// Locks SPL tokens until a specified Unix timestamp.
+    /// Charges a 0.15 USDC fee.
+    #[account(0, signer, writable, name = "owner", desc = "Lock owner who pays for creation")]
+    #[account(1, writable, name = "owner_token_account", desc = "Owner's token account for the locked mint")]
+    #[account(2, writable, name = "owner_usdc_account", desc = "Owner's USDC account for fee payment")]
+    #[account(3, name = "mint", desc = "Token mint being locked")]
+    #[account(4, writable, name = "lock_account", desc = "Lock PDA to be created")]
+    #[account(5, writable, name = "lock_token_account", desc = "Lock's token escrow account")]
+    #[account(6, writable, name = "fee_vault", desc = "Fee vault to receive USDC fee")]
+    #[account(7, name = "token_program", desc = "SPL Token program")]
+    #[account(8, name = "system_program", desc = "System program")]
     InitializeLock {
         amount: u64,
         unlock_timestamp: i64,
@@ -21,6 +48,12 @@ pub enum LocksmithInstruction {
     },
 
     /// Unlock tokens after the unlock timestamp has passed.
+    /// Returns tokens to the owner and closes the lock account.
+    #[account(0, signer, writable, name = "owner", desc = "Lock owner receiving tokens")]
+    #[account(1, writable, name = "owner_token_account", desc = "Destination for unlocked tokens")]
+    #[account(2, writable, name = "lock_account", desc = "Lock account to be closed")]
+    #[account(3, writable, name = "lock_token_account", desc = "Lock's token account to be closed")]
+    #[account(4, name = "token_program", desc = "SPL Token program")]
     Unlock { lock_id: u64 },
 }
 

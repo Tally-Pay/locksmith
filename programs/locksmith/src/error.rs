@@ -1,19 +1,33 @@
+use shank::ShankType;
 use solana_program::program_error::ProgramError;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+/// Locksmith program errors
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ShankType)]
 #[repr(u32)]
 pub enum LocksmithError {
+    /// Caller is not authorized to perform this action
     Unauthorized = 0,
+    /// Unlock timestamp must be in the future
     InvalidTimestamp,
+    /// Insufficient token balance for this operation
     InsufficientFunds,
+    /// Cannot unlock tokens before the unlock timestamp
     UnlockTooEarly,
+    /// Lock token amount doesn't match lock account amount
     InconsistentState,
+    /// Lock amount must be greater than zero
     InvalidAmount,
+    /// Invalid instruction data
     InvalidInstruction,
+    /// Account has not been initialized
     UninitializedAccount,
+    /// Account has already been initialized
     AlreadyInitialized,
+    /// Invalid PDA derivation
     InvalidPDA,
+    /// Invalid token mint
     InvalidMint,
+    /// Lock duration exceeds maximum of 10 years
     LockDurationExceeded,
 }
 

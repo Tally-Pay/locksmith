@@ -13,6 +13,7 @@ default = []
 no-entrypoint = []
 
 [dependencies]
+shank = "0.4.6"
 solana-program = "3"
 solana-system-interface = { version = "2", features = ["bincode"] }
 spl-token = { version = "9", features = ["no-entrypoint"] }

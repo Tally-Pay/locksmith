@@ -1,3 +1,4 @@
+use shank::ShankAccount;
 use solana_program::{program_error::ProgramError, pubkey::Pubkey};
 
 use crate::error::LocksmithError;
@@ -19,11 +20,15 @@ pub const FEE_USDC: u64 = 150_000;
 /// This prevents accidental permanent locks while supporting all legitimate use cases
 pub const MAX_LOCK_DURATION_SECONDS: i64 = 10 * 365 * 24 * 60 * 60;
 
-/// Config account - stores admin and program state
-#[derive(Debug, PartialEq)]
+/// Config account - stores admin and program state.
+/// PDA seeds: ["config"]
+#[derive(Debug, PartialEq, ShankAccount)]
 pub struct ConfigAccount {
+    /// Account discriminator
     pub discriminator: [u8; 8],
+    /// Admin pubkey who controls the program
     pub admin: Pubkey,
+    /// PDA bump seed
     pub bump: u8,
 }
 
@@ -55,16 +60,25 @@ impl ConfigAccount {
     }
 }
 
-/// Lock account - stores information about a single token lock
-#[derive(Debug, PartialEq)]
+/// Lock account - stores information about a single token lock.
+/// PDA seeds: ["lock", owner, mint, lock_id.to_le_bytes()]
+#[derive(Debug, PartialEq, ShankAccount)]
 pub struct LockAccount {
+    /// Account discriminator
     pub discriminator: [u8; 8],
+    /// Owner of the locked tokens
     pub owner: Pubkey,
+    /// Mint of the locked tokens
     pub mint: Pubkey,
+    /// Amount of tokens locked
     pub amount: u64,
+    /// Unix timestamp when tokens can be unlocked
     pub unlock_timestamp: i64,
+    /// Unix timestamp when the lock was created
     pub created_at: i64,
+    /// User-provided lock identifier
     pub lock_id: u64,
+    /// PDA bump seed
     pub bump: u8,
 }
 

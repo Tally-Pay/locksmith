@@ -1,20 +1,30 @@
 {
   "license": "ISC",
+  "type": "module",
   "scripts": {
+    "generate:idl": "shank idl --crate-root programs/locksmith --out-dir idl",
+    "generate:sdk": "tsx scripts/generate-sdk.ts",
+    "generate": "npm run generate:idl && npm run generate:sdk",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.32.1"
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/spl-token": "^0.4.14"
   },
   "devDependencies": {
-    "chai": "^4.3.4",
-    "mocha": "^9.0.3",
-    "ts-mocha": "^10.0.0",
+    "@codama/nodes-from-anchor": "^1.3.4",
+    "@codama/renderers-js": "^1.5.1",
     "@types/bn.js": "^5.1.0",
     "@types/chai": "^4.3.0",
     "@types/mocha": "^9.0.0",
-    "typescript": "^5.7.3",
-    "prettier": "^2.6.2"
+    "@types/node": "^24.10.1",
+    "chai": "^4.3.4",
+    "codama": "^1.4.2",
+    "mocha": "^9.0.3",
+    "prettier": "^2.6.2",
+    "ts-mocha": "^10.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.7.3"
   }
 }

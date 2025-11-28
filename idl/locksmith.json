@@ -1,0 +1,420 @@
+{
+  "version": "0.1.0",
+  "name": "locksmith",
+  "instructions": [
+    {
+      "name": "InitializeConfig",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Admin who will control the program"
+          ]
+        },
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Config PDA to be created"
+          ]
+        },
+        {
+          "name": "usdcMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "USDC mint for fee validation"
+          ]
+        },
+        {
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Fee vault PDA to be created"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
+      "name": "TransferAdmin",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Current admin"
+          ]
+        },
+        {
+          "name": "newAdmin",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "New admin pubkey"
+          ]
+        },
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Config account"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 1
+      }
+    },
+    {
+      "name": "WithdrawFees",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Admin withdrawing fees"
+          ]
+        },
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Config account for admin verification"
+          ]
+        },
+        {
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Fee vault holding USDC fees"
+          ]
+        },
+        {
+          "name": "adminTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Admin's USDC token account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 2
+      }
+    },
+    {
+      "name": "InitializeLock",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Lock owner who pays for creation"
+          ]
+        },
+        {
+          "name": "ownerTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Owner's token account for the locked mint"
+          ]
+        },
+        {
+          "name": "ownerUsdcAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Owner's USDC account for fee payment"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Token mint being locked"
+          ]
+        },
+        {
+          "name": "lockAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Lock PDA to be created"
+          ]
+        },
+        {
+          "name": "lockTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Lock's token escrow account"
+          ]
+        },
+        {
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Fee vault to receive USDC fee"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "unlockTimestamp",
+          "type": "i64"
+        },
+        {
+          "name": "lockId",
+          "type": "u64"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 3
+      }
+    },
+    {
+      "name": "Unlock",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Lock owner receiving tokens"
+          ]
+        },
+        {
+          "name": "ownerTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Destination for unlocked tokens"
+          ]
+        },
+        {
+          "name": "lockAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Lock account to be closed"
+          ]
+        },
+        {
+          "name": "lockTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Lock's token account to be closed"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL Token program"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "lockId",
+          "type": "u64"
+        }
+      ],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ConfigAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "discriminator",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "admin",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LockAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "discriminator",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "unlockTimestamp",
+            "type": "i64"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "lockId",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LocksmithError",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unauthorized"
+          },
+          {
+            "name": "InvalidTimestamp"
+          },
+          {
+            "name": "InsufficientFunds"
+          },
+          {
+            "name": "UnlockTooEarly"
+          },
+          {
+            "name": "InconsistentState"
+          },
+          {
+            "name": "InvalidAmount"
+          },
+          {
+            "name": "InvalidInstruction"
+          },
+          {
+            "name": "UninitializedAccount"
+          },
+          {
+            "name": "AlreadyInitialized"
+          },
+          {
+            "name": "InvalidPDA"
+          },
+          {
+            "name": "InvalidMint"
+          },
+          {
+            "name": "LockDurationExceeded"
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "origin": "shank",
+    "address": "A5vz72a5ipKUJZxmGUjGtS7uhWfzr6jhDgV2q73YhD8A"
+  }
+}
