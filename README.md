@@ -23,7 +23,7 @@ Locksmith allows users to lock any SPL token until a future date. Once locked, t
 | | |
 |---|---|
 | **Program ID** | `A5vz72a5ipKUJZxmGUjGtS7uhWfzr6jhDgV2q73YhD8A` |
-| **Network** | Devnet |
+| **Network** | Mainnet |
 | **Fee** | 0.15 USDC per lock |
 | **Max Lock Duration** | 10 years |
 
