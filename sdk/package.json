@@ -18,13 +18,16 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
-    "@solana/kit": "^2.1.0"
+    "@solana/kit": "^2.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.14"
   },
   "peerDependencies": {
     "@solana/kit": "^2.0.0"
