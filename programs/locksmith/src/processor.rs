@@ -667,10 +667,10 @@ mod tests {
     }
 
     #[test]
-    fn test_usdc_mint_matches_devnet() {
+    fn test_usdc_mint_matches_mainnet() {
         assert_eq!(
             USDC_MINT.to_string(),
-            "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
         );
     }
 

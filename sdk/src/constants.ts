@@ -1,10 +1,10 @@
 import type { Address } from "@solana/kit";
 
 /**
- * USDC mint address (devnet)
+ * USDC mint address (mainnet)
  */
 export const USDC_MINT =
-  "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" as Address<"4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU">;
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" as Address<"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v">;
 
 /**
  * Fee amount: 0.15 USDC (USDC has 6 decimals)

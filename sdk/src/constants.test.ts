@@ -23,10 +23,9 @@ import { getConfigAccountSize, getLockAccountSize } from "./generated";
  */
 
 describe("USDC Mint constant", () => {
-  it("matches the devnet USDC mint address", () => {
-    // This is the devnet USDC mint used for testing
-    // Mainnet USDC: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-    expect(USDC_MINT).toBe("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
+  it("matches the mainnet USDC mint address", () => {
+    // Mainnet USDC mint
+    expect(USDC_MINT).toBe("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
   });
 
   it("is a valid base58 Solana address", () => {

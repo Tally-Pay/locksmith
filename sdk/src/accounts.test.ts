@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { type Address } from "@solana/kit";
+import { type Address, lamports } from "@solana/kit";
 import {
   getConfigAccountDecoder,
   getConfigAccountEncoder,
@@ -347,20 +347,18 @@ describe("decodeAccount helpers", () => {
     data[40] = 123;
 
     const encodedAccount = {
-      exists: true,
+      exists: true as const,
       address: TEST_ADDRESSES.account,
       data,
       executable: false,
-      lamports: 1000000n,
+      lamports: lamports(1000000n),
       programAddress: TEST_ADDRESSES.program,
+      space: BigInt(data.length),
     };
 
     const decoded = decodeConfigAccount(encodedAccount);
 
-    expect(decoded.exists).toBe(true);
-    if (decoded.exists) {
-      expect(decoded.data.bump).toBe(123);
-    }
+    expect(decoded.data.bump).toBe(123);
   });
 
   it("decodeLockAccount handles MaybeEncodedAccount format", () => {
@@ -373,21 +371,19 @@ describe("decodeAccount helpers", () => {
     data[104] = 200;
 
     const encodedAccount = {
-      exists: true,
+      exists: true as const,
       address: TEST_ADDRESSES.account,
       data,
       executable: false,
-      lamports: 1000000n,
+      lamports: lamports(1000000n),
       programAddress: TEST_ADDRESSES.program,
+      space: BigInt(data.length),
     };
 
     const decoded = decodeLockAccount(encodedAccount);
 
-    expect(decoded.exists).toBe(true);
-    if (decoded.exists) {
-      expect(decoded.data.amount).toBe(1000n);
-      expect(decoded.data.bump).toBe(200);
-    }
+    expect(decoded.data.amount).toBe(1000n);
+    expect(decoded.data.bump).toBe(200);
   });
 
   it("handles non-existent accounts", () => {
